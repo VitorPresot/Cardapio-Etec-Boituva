@@ -9,7 +9,7 @@ export const NutritionCard: React.FC<NutritionCardProps> = ({ nutrition }) => {
   return (
     <div className="nutrition">
       <div className="d-flex align-items-center gap-2 mb-4">
-        <div className="nutrition-icon mb-0">
+        <div className="nutrition-icon mb-0 icon-energy">
           <i className="bi bi-bar-chart-fill"></i>
         </div>
         <div>
@@ -22,7 +22,7 @@ export const NutritionCard: React.FC<NutritionCardProps> = ({ nutrition }) => {
         {/* ENERGIA */}
         <div className="col-6 col-lg-3">
           <div className="nutrition-item">
-            <div className="nutrition-icon">
+            <div className="nutrition-icon icon-energy">
               <i className="bi bi-lightning-charge-fill"></i>
             </div>
             <div className="nutrition-label">ENERGIA</div>
@@ -35,7 +35,7 @@ export const NutritionCard: React.FC<NutritionCardProps> = ({ nutrition }) => {
         {/* CARBOIDRATOS */}
         <div className="col-6 col-lg-3">
           <div className="nutrition-item">
-            <div className="nutrition-icon">
+            <div className="nutrition-icon icon-carbs">
               <i className="bi bi-basket2-fill"></i>
             </div>
             <div className="nutrition-label">CARBOIDRATOS</div>
@@ -51,14 +51,14 @@ export const NutritionCard: React.FC<NutritionCardProps> = ({ nutrition }) => {
         {/* PROTEÍNAS */}
         <div className="col-6 col-lg-3">
           <div className="nutrition-item">
-            <div className="nutrition-icon">
+            <div className="nutrition-icon icon-proteins">
               <i className="bi bi-activity"></i>
             </div>
             <div className="nutrition-label">PROTEÍNAS</div>
             <div className="nutrition-value">
               {Number(nutrition.proteins_g).toFixed(1)} <small>g</small>
             </div>
-            <div className="nutrition-vet">
+            <div className="nutrition-vet-red">
               {Number(nutrition.proteins_vet_percent).toFixed(1)}% VET
             </div>
           </div>
@@ -67,7 +67,7 @@ export const NutritionCard: React.FC<NutritionCardProps> = ({ nutrition }) => {
         {/* LIPÍDIOS */}
         <div className="col-6 col-lg-3">
           <div className="nutrition-item">
-            <div className="nutrition-icon">
+            <div className="nutrition-icon icon-lipids">
               <i className="bi bi-droplet-fill"></i>
             </div>
             <div className="nutrition-label">LIPÍDIOS</div>
@@ -83,4 +83,3 @@ export const NutritionCard: React.FC<NutritionCardProps> = ({ nutrition }) => {
     </div>
   );
 };
-

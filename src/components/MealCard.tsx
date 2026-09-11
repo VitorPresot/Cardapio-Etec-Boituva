@@ -43,7 +43,7 @@ export const MealCard: React.FC<MealCardProps> = ({ meal }) => {
       {/* FRUTA */}
       {meal.fruit && (
         <div className="food-item">
-          <span className="food-icon">
+          <span className="food-icon fruit-icon">
             <i className="bi bi-apple"></i>
           </span>
           <div>
@@ -54,4 +54,3 @@ export const MealCard: React.FC<MealCardProps> = ({ meal }) => {
     </article>
   );
 };
-

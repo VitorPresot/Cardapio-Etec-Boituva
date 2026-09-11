@@ -24,6 +24,15 @@ export default function RootLayout({
         />
       </head>
       <body>{children}</body>
+      <body>
+        <div className="ambient-background" aria-hidden="true">
+          <div className="ambient-orb orb-green"></div>
+          <div className="ambient-orb orb-red"></div>
+          <div className="ambient-orb orb-yellow"></div>
+          <div className="ambient-orb orb-gray"></div>
+        </div>
+        {children}
+      </body>
     </html>
   );
 }

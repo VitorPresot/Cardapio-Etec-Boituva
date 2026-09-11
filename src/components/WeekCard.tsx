@@ -19,12 +19,12 @@ export const WeekCard: React.FC<WeekCardProps> = ({ week, badgeLabel }) => {
             <h2 className="week-title d-flex align-items-center flex-wrap gap-2">
               <span>Semana {week.week_number}</span>
               {week.is_current ? (
-                <span className="badge bg-success-subtle text-success fs-6 border border-success-subtle">
-                  Semana Atual
+                <span className="badge badge-semana-atual">
+                  <i className="bi bi-star-fill text-warning me-1"></i> Semana Atual
                 </span>
               ) : (
-                <span className="badge bg-warning-subtle text-warning-emphasis fs-6 border border-warning-subtle">
-                  Próxima Semana
+                <span className="badge badge-semana-futura">
+                  <i className="bi bi-calendar-event me-1"></i> Planejamento
                 </span>
               )}
             </h2>
@@ -38,8 +38,8 @@ export const WeekCard: React.FC<WeekCardProps> = ({ week, badgeLabel }) => {
           </div>
 
           <div className="col-md-auto mt-2 mt-md-0">
-            <span className="week-number">
-              <i className="bi bi-check-circle me-1"></i>
+            <span className="week-status-pill">
+              <i className="bi bi-check-circle me-1 text-success"></i>
               {badgeLabel || 'Cardápio disponível'}
             </span>
           </div>
@@ -68,4 +68,3 @@ export const WeekCard: React.FC<WeekCardProps> = ({ week, badgeLabel }) => {
     </section>
   );
 };
-

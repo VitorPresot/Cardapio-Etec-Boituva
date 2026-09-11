@@ -1,212 +1,420 @@
 :root {
+  /* Identidade Verde ETEC */
   --primary: #176b3a;
   --primary-dark: #0e4d2a;
   --primary-light: #e9f7ef;
+  --primary-glow: rgba(23, 107, 58, 0.25);
+
+  /* Dourado / Amarelo Nutrição */
   --secondary: #f4b942;
-  --background: #f5f7f6;
-  --text: #202923;
-  --muted: #718078;
+  --secondary-light: #fff8e6;
+  --secondary-dark: #d69200;
+
+  /* Vermelho Vivo Vibrante */
+  --accent-red: #e63946;
+  --accent-red-hover: #d90429;
+  --accent-red-light: #ffebee;
+  --accent-red-border: #ffccd5;
+  --accent-red-glow: rgba(230, 57, 70, 0.25);
+
+  /* Escala de Cinzas Modernos e Equilibrados */
+  --gray-50: #f8faf9;
+  --gray-100: #f1f4f2;
+  --gray-200: #e5eae7;
+  --gray-300: #d5ded9;
+  --gray-400: #a3b2aa;
+  --gray-600: #64746b;
+  --gray-700: #47544d;
+  --gray-800: #2d3831;
+  --gray-900: #1b241e;
+
+  /* Fundo e Tipografia */
+  --background: #f4f7f5;
+  --card-bg: #ffffff;
+  --text: #1d2621;
+  --muted: #64746b;
 }
 
 * {
   box-sizing: border-box;
 }
 
-body {
+html, body {
   margin: 0;
+  padding: 0;
   background: var(--background);
   color: var(--text);
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+  overflow-x: hidden;
 }
 
-/* NAVBAR */
+body {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* ==========================================================================
+   FUNDO DINÂMICO E ANIMADO COM ORBS DE CORES (VERDE, DOURADO, VERMELHO E CINZA)
+   ========================================================================== */
+.ambient-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.ambient-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.45;
+  will-change: transform;
+}
+
+/* Orb Verde Institucional */
+.orb-green {
+  width: 480px;
+  height: 480px;
+  background: radial-gradient(circle, rgba(23, 107, 58, 0.4) 0%, rgba(23, 107, 58, 0) 70%);
+  top: -100px;
+  right: -50px;
+  animation: floatOrbGreen 18s ease-in-out infinite alternate;
+}
+
+/* Orb Vermelho Vibrante */
+.orb-red {
+  width: 420px;
+  height: 420px;
+  background: radial-gradient(circle, rgba(230, 57, 70, 0.28) 0%, rgba(230, 57, 70, 0) 70%);
+  bottom: 10%;
+  left: -80px;
+  animation: floatOrbRed 22s ease-in-out infinite alternate;
+}
+
+/* Orb Dourado Nutrição */
+.orb-yellow {
+  width: 380px;
+  height: 380px;
+  background: radial-gradient(circle, rgba(244, 185, 66, 0.32) 0%, rgba(244, 185, 66, 0) 70%);
+  top: 40%;
+  right: 15%;
+  animation: floatOrbYellow 25s ease-in-out infinite alternate;
+}
+
+/* Orb Cinza Suave Neutro */
+.orb-gray {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(200, 214, 206, 0.35) 0%, rgba(200, 214, 206, 0) 70%);
+  top: 25%;
+  left: 30%;
+  animation: floatOrbGray 30s ease-in-out infinite alternate;
+}
+
+@keyframes floatOrbGreen {
+  0% { transform: translate(0px, 0px) scale(1); }
+  50% { transform: translate(-80px, 60px) scale(1.1); }
+  100% { transform: translate(40px, 120px) scale(0.95); }
+}
+
+@keyframes floatOrbRed {
+  0% { transform: translate(0px, 0px) scale(1); }
+  50% { transform: translate(90px, -70px) scale(1.15); }
+  100% { transform: translate(50px, -130px) scale(0.9); }
+}
+
+@keyframes floatOrbYellow {
+  0% { transform: translate(0px, 0px) scale(1); }
+  50% { transform: translate(-60px, -50px) scale(0.9); }
+  100% { transform: translate(80px, 40px) scale(1.1); }
+}
+
+@keyframes floatOrbGray {
+  0% { transform: translate(0px, 0px) scale(1); }
+  100% { transform: translate(-50px, 80px) scale(1.08); }
+}
+
+/* ==========================================================================
+   NAVBAR
+   ========================================================================== */
 .navbar-custom {
-  background: linear-gradient(135deg, var(--primary-dark), var(--primary));
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 75%, #1f8249 100%);
+  box-shadow: 0 4px 25px rgba(14, 77, 42, 0.2);
+  position: relative;
+  z-index: 10;
+  border-bottom: 2px solid rgba(244, 185, 66, 0.35);
 }
 
 .brand {
   color: white !important;
   font-weight: 800;
-  font-size: 1.25rem;
-  letter-spacing: -0.3px;
+  font-size: 1.3rem;
+  letter-spacing: -0.4px;
   text-decoration: none;
+  display: inline-flex;
+  align-items: center;
 }
 
 .brand-icon {
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 12px;
-  margin-right: 10px;
-  font-size: 1.25rem;
+  margin-right: 12px;
+  font-size: 1.3rem;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+}
+
+.brand:hover .brand-icon {
+  transform: rotate(-6deg) scale(1.05);
 }
 
 .nav-admin-btn {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.12);
   color: white;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 999px;
-  padding: 6px 16px;
+  padding: 8px 18px;
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.88rem;
   text-decoration: none;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
+  backdrop-filter: blur(6px);
 }
 
 .nav-admin-btn:hover {
   background: white;
   color: var(--primary-dark);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
 }
 
-/* HERO */
+/* ==========================================================================
+   HERO BANNER COM DETALHES VIBRANTES
+   ========================================================================== */
 .hero {
   background:
-    radial-gradient(circle at top right, rgba(255, 255, 255, 0.15), transparent 35%),
-    linear-gradient(135deg, var(--primary-dark), var(--primary));
+    radial-gradient(circle at top right, rgba(244, 185, 66, 0.2), transparent 45%),
+    radial-gradient(circle at bottom left, rgba(230, 57, 70, 0.2), transparent 45%),
+    linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 65%, #187a43 100%);
   color: white;
-  padding: 70px 0 90px;
-  margin-bottom: -40px;
+  padding: 75px 0 95px;
+  margin-bottom: -45px;
+  position: relative;
+  z-index: 1;
 }
 
 .hero h1 {
-  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-size: clamp(2.2rem, 5vw, 3.7rem);
   font-weight: 800;
   letter-spacing: -1.5px;
+  line-height: 1.15;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
 }
 
 .hero p {
-  color: rgba(255, 255, 255, 0.82);
-  font-size: 1.05rem;
-  max-width: 650px;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 1.1rem;
+  max-width: 680px;
+  line-height: 1.6;
 }
 
 .hero-badge {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  padding: 8px 16px;
   border-radius: 999px;
-  font-size: 0.85rem;
-  margin-bottom: 18px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
 }
 
-/* CONTENT */
+.hero-badge i {
+  color: var(--secondary);
+}
+
+/* ==========================================================================
+   CONTEÚDO PRINCIPAL
+   ========================================================================== */
 .content {
   position: relative;
   z-index: 2;
   flex: 1;
 }
 
-/* WEEK TABS / FILTER */
+/* ==========================================================================
+   SELETOR DE ATÉ 4 SEMANAS (TABS MODERNAS COM DESTAQUES)
+   ========================================================================== */
 .week-tabs-container {
   display: flex;
-  gap: 12px;
-  margin-bottom: 24px;
+  gap: 10px;
   flex-wrap: wrap;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(12px);
+  padding: 8px;
+  border-radius: 20px;
+  border: 1px solid var(--gray-300);
+  box-shadow: 0 6px 20px rgba(27, 36, 30, 0.05);
 }
 
 .week-tab-btn {
-  border: none;
-  border-radius: 999px;
-  padding: 10px 20px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  padding: 9px 18px;
   font-weight: 700;
-  font-size: 0.95rem;
-  background: white;
-  color: var(--muted);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  transition: all 0.2s ease;
+  font-size: 0.92rem;
+  background: transparent;
+  color: var(--gray-700);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  position: relative;
 }
 
 .week-tab-btn:hover {
-  color: var(--primary);
-  transform: translateY(-2px);
+  background: var(--gray-100);
+  color: var(--primary-dark);
+  transform: translateY(-1px);
 }
 
 .week-tab-btn.active {
   background: var(--primary);
   color: white;
-  box-shadow: 0 4px 14px rgba(23, 107, 58, 0.35);
+  border-color: var(--primary-dark);
+  box-shadow: 0 4px 14px var(--primary-glow);
 }
 
+.week-tab-btn.active-all {
+  background: var(--gray-800);
+  color: white;
+  border-color: var(--gray-900);
+  box-shadow: 0 4px 14px rgba(33, 37, 41, 0.25);
+}
+
+.tab-badge-current {
+  background: #ffffff;
+  color: var(--primary);
+  font-size: 0.72rem;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.week-tab-btn.active .tab-badge-current {
+  background: #ffffff;
+  color: var(--primary);
+}
+
+/* ==========================================================================
+   CARD DA SEMANA
+   ========================================================================== */
 .week-card {
-  background: white;
-  border: none;
-  border-radius: 22px;
+  background: var(--card-bg);
+  border: 1px solid var(--gray-200);
+  border-radius: 24px;
   overflow: hidden;
-  box-shadow: 0 8px 35px rgba(24, 52, 36, 0.08);
-  margin-bottom: 35px;
+  box-shadow: 0 10px 40px rgba(23, 107, 58, 0.07);
+  margin-bottom: 40px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .week-header {
-  padding: 25px 28px;
-  background: white;
-  border-bottom: 1px solid #edf1ee;
+  padding: 26px 32px;
+  background: #ffffff;
+  border-bottom: 1px solid var(--gray-200);
 }
 
 .week-title {
   font-weight: 800;
   margin: 0;
+  color: var(--text);
+  font-size: 1.5rem;
 }
 
 .date-range {
   color: var(--muted);
-  margin: 5px 0 0;
-  font-size: 0.92rem;
+  margin: 6px 0 0;
+  font-size: 0.94rem;
+  font-weight: 500;
 }
 
-.week-number {
+.badge-semana-atual {
   background: var(--primary-light);
   color: var(--primary);
-  padding: 8px 14px;
+  border: 1px solid #c8e8d5;
+  padding: 5px 12px;
   border-radius: 999px;
+  font-size: 0.82rem;
   font-weight: 700;
-  font-size: 0.85rem;
 }
 
-.next-week-tag {
-  background: #fff8e6;
-  color: #b7791f;
-  padding: 4px 10px;
+.badge-semana-futura {
+  background: var(--secondary-light);
+  color: #925f05;
+  border: 1px solid #fae1a6;
+  padding: 5px 12px;
   border-radius: 999px;
+  font-size: 0.82rem;
   font-weight: 700;
-  font-size: 0.78rem;
-  margin-left: 8px;
-  border: 1px solid #fbd38d;
 }
 
-/* MEAL CARDS */
+.week-status-pill {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.86rem;
+  border: 1px solid #b8dfc8;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ==========================================================================
+   MEAL CARDS (REFEIÇÕES COM TOQUES EM VERMELHO E VERDE)
+   ========================================================================== */
 .meal-grid {
-  padding: 25px;
+  padding: 28px;
 }
 
 .meal-card {
   height: 100%;
-  border: 1px solid #e9eeeb;
-  border-radius: 18px;
-  padding: 22px;
-  transition: all 0.2s ease;
-  background: #fff;
+  border: 1px solid var(--gray-200);
+  border-radius: 20px;
+  padding: 24px;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  background: #ffffff;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .meal-card:hover {
-  transform: translateY(-4px);
-  border-color: #c9dfd1;
-  box-shadow: 0 12px 28px rgba(23, 107, 58, 0.1);
+  transform: translateY(-5px);
+  border-color: #b8dfc8;
+  box-shadow: 0 14px 30px rgba(23, 107, 58, 0.12);
 }
 
 .day-icon {
@@ -218,24 +426,29 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.25rem;
+  font-size: 1.3rem;
+  border: 1px solid #c9dfd1;
+  flex-shrink: 0;
 }
 
 .day-title {
-  font-size: 1rem;
+  font-size: 1.08rem;
   font-weight: 800;
   margin: 0;
+  color: var(--text);
 }
 
 .day-date {
   color: var(--muted);
-  font-size: 0.82rem;
+  font-size: 0.84rem;
+  font-weight: 500;
 }
 
 .main-dish {
-  background: #f8faf9;
-  border-radius: 14px;
-  padding: 16px;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: 16px;
+  padding: 16px 18px;
   margin: 18px 0;
   flex-grow: 1;
 }
@@ -244,120 +457,183 @@ body {
   color: var(--primary);
   text-transform: uppercase;
   font-weight: 800;
-  font-size: 0.68rem;
-  letter-spacing: 0.7px;
+  font-size: 0.7rem;
+  letter-spacing: 0.8px;
   margin-bottom: 6px;
+  display: flex;
+  align-items: center;
 }
 
 .main-dish p {
   margin: 0;
-  line-height: 1.5;
-  font-size: 0.94rem;
+  line-height: 1.55;
+  font-size: 0.95rem;
+  color: var(--gray-800);
 }
 
 .food-item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   margin-top: 10px;
-  color: #49564e;
-  font-size: 0.88rem;
+  color: var(--gray-800);
+  font-size: 0.9rem;
 }
 
 .food-icon {
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fff7df;
-  color: #d69200;
+  font-size: 0.95rem;
   flex-shrink: 0;
 }
 
 .salad-icon {
-  background: #e9f7ef;
+  background: var(--primary-light);
   color: #198754;
+  border: 1px solid #c9dfd1;
 }
 
-/* NUTRITION */
+/* Fruta com o toque vermelho vivo pedido pelo usuário */
+.fruit-icon {
+  background: var(--accent-red-light);
+  color: var(--accent-red);
+  border: 1px solid var(--accent-red-border);
+}
+
+/* ==========================================================================
+   COMPOSIÇÃO NUTRICIONAL
+   ========================================================================== */
 .nutrition {
-  margin: 0 25px 25px;
-  background: linear-gradient(135deg, #f0faf4, #f8fcf9);
-  border: 1px solid #dceee2;
-  border-radius: 18px;
-  padding: 25px;
+  margin: 0 28px 28px;
+  background: linear-gradient(135deg, #f0faf4 0%, #f9fbf9 50%, #fefcf9 100%);
+  border: 1px solid #d4ebd9;
+  border-radius: 20px;
+  padding: 26px;
 }
 
 .nutrition-title {
   font-weight: 800;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
+  color: var(--text);
+  font-size: 1.15rem;
 }
 
 .nutrition-item {
-  background: white;
-  border-radius: 14px;
-  padding: 17px;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 18px;
   height: 100%;
-  border: 1px solid #e5eee8;
+  border: 1px solid var(--gray-200);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+  transition: transform 0.2s ease;
+}
+
+.nutrition-item:hover {
+  transform: translateY(-2px);
 }
 
 .nutrition-icon {
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 11px;
-  background: var(--primary-light);
+  border-radius: 12px;
+  margin-bottom: 12px;
+  font-size: 1.1rem;
+}
+
+.icon-energy {
+  background: #fff8e6;
+  color: var(--secondary-dark);
+  border: 1px solid #fae1a6;
+}
+
+.icon-carbs {
+  background: #eef7f2;
   color: var(--primary);
-  margin-bottom: 10px;
+  border: 1px solid #cfead7;
+}
+
+.icon-proteins {
+  background: var(--accent-red-light);
+  color: var(--accent-red);
+  border: 1px solid var(--accent-red-border);
+}
+
+.icon-lipids {
+  background: #e8f4fd;
+  color: #0284c7;
+  border: 1px solid #bae6fd;
 }
 
 .nutrition-label {
-  color: var(--muted);
-  font-size: 0.75rem;
-  font-weight: 600;
+  color: var(--gray-600);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
 }
 
 .nutrition-value {
-  font-size: 1.25rem;
+  font-size: 1.35rem;
   font-weight: 800;
+  color: var(--text);
+  line-height: 1.2;
+  margin-top: 4px;
 }
 
 .nutrition-vet {
   color: var(--primary);
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   font-weight: 700;
+  margin-top: 3px;
 }
 
-/* FOOTER */
+.nutrition-vet-red {
+  color: var(--accent-red);
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-top: 3px;
+}
+
+/* ==========================================================================
+   FOOTER
+   ========================================================================== */
 footer {
-  margin-top: 60px;
-  padding: 35px 0;
-  background: #14231a;
-  color: rgba(255, 255, 255, 0.65);
+  margin-top: auto;
+  padding: 40px 0;
+  background: #121d16;
+  color: rgba(255, 255, 255, 0.7);
+  border-top: 3px solid var(--primary);
+  position: relative;
+  z-index: 2;
 }
 
 footer strong {
-  color: white;
+  color: #ffffff;
+  font-size: 1.05rem;
 }
 
-/* ADMIN PANEL STYLES */
+/* ==========================================================================
+   ADMIN PANEL STYLES
+   ========================================================================== */
 .admin-card {
-  background: white;
-  border-radius: 20px;
-  border: 1px solid #e5eee8;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.05);
-  padding: 24px;
-  margin-bottom: 24px;
+  background: #ffffff;
+  border-radius: 22px;
+  border: 1px solid var(--gray-200);
+  box-shadow: 0 6px 25px rgba(27, 36, 30, 0.05);
+  padding: 26px;
+  margin-bottom: 26px;
 }
 
 .admin-header {
-  border-bottom: 1px solid #edf1ee;
+  border-bottom: 1px solid var(--gray-200);
   padding-bottom: 18px;
-  margin-bottom: 20px;
+  margin-bottom: 22px;
 }
 
 .btn-etec-primary {
@@ -366,20 +642,20 @@ footer strong {
   border: none;
   border-radius: 12px;
   font-weight: 700;
-  padding: 10px 20px;
+  padding: 10px 22px;
   transition: all 0.2s ease;
 }
 
 .btn-etec-primary:hover {
   background: var(--primary-dark);
   color: white;
-  box-shadow: 0 4px 14px rgba(23, 107, 58, 0.3);
+  box-shadow: 0 4px 16px var(--primary-glow);
 }
 
 .btn-etec-secondary {
   background: var(--primary-light);
-  color: var(--primary);
-  border: 1px solid #c9dfd1;
+  color: var(--primary-dark);
+  border: 1px solid #c2e2ce;
   border-radius: 12px;
   font-weight: 700;
   padding: 10px 20px;
@@ -387,30 +663,56 @@ footer strong {
 }
 
 .btn-etec-secondary:hover {
-  background: #d4ebd9;
+  background: #d5ecd8;
   color: var(--primary-dark);
+}
+
+.btn-etec-red {
+  background: var(--accent-red);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 700;
+  padding: 10px 20px;
+  transition: all 0.2s ease;
+}
+
+.btn-etec-red:hover {
+  background: var(--accent-red-hover);
+  color: white;
+  box-shadow: 0 4px 14px var(--accent-red-glow);
 }
 
 .nav-pills-etec .nav-link {
   border-radius: 12px;
-  color: var(--muted);
+  color: var(--gray-700);
   font-weight: 700;
-  padding: 10px 22px;
+  padding: 10px 20px;
   background: white;
-  border: 1px solid #e0e6e2;
-  margin-right: 10px;
+  border: 1px solid var(--gray-300);
+  margin-right: 8px;
+  margin-bottom: 6px;
+  transition: all 0.2s ease;
+}
+
+.nav-pills-etec .nav-link:hover {
+  background: var(--gray-100);
+  border-color: var(--gray-400);
 }
 
 .nav-pills-etec .nav-link.active {
   background: var(--primary);
   color: white;
-  border-color: var(--primary);
+  border-color: var(--primary-dark);
+  box-shadow: 0 4px 12px var(--primary-glow);
 }
 
-/* RESPONSIVE */
+/* ==========================================================================
+   RESPONSIVIDADE
+   ========================================================================== */
 @media (max-width: 768px) {
   .hero {
-    padding: 50px 0 75px;
+    padding: 55px 0 80px;
   }
 
   .week-header {
@@ -418,16 +720,20 @@ footer strong {
   }
 
   .meal-grid {
-    padding: 15px;
+    padding: 16px;
   }
 
   .nutrition {
-    margin: 0 15px 15px;
+    margin: 0 16px 20px;
+    padding: 20px;
   }
 
-  .week-number {
-    margin-top: 15px;
-    display: inline-block;
+  .week-tabs-container {
+    padding: 6px;
+  }
+
+  .week-tab-btn {
+    padding: 8px 14px;
+    font-size: 0.85rem;
   }
 }
-

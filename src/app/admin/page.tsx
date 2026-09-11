@@ -13,7 +13,7 @@ import { Footer } from '@/components/Footer';
 export default function AdminDashboardPage() {
   const router = useRouter();
   const [weeks, setWeeks] = useState<Week[]>(initialWeeks);
-  const [activeWeekIndex, setActiveWeekIndex] = useState<number>(0); // 0 = Semana Atual, 1 = Próxima Semana
+  const [activeWeekIndex, setActiveWeekIndex] = useState<number>(0);
   const [saving, setSaving] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'danger'; text: string } | null>(null);
 
@@ -68,9 +68,9 @@ export default function AdminDashboardPage() {
 
       const data = await res.json();
       if (data.success) {
-        showNotification('Cardápio salvo com sucesso! As alterações já estão visíveis publicamente.');
+        showNotification('Cardápio das 4 semanas salvo com sucesso! Já está visível publicamente.');
       } else {
-        showNotification('Salvo localmente com sucesso! (Servidor retornou aviso)', 'success');
+        showNotification('Salvo localmente com sucesso no navegador!', 'success');
       }
     } catch {
       saveClientMenu(weeks);
@@ -82,25 +82,132 @@ export default function AdminDashboardPage() {
 
   // Restaurar dados padrão de teste
   const handleReset = () => {
-    if (confirm('Tem certeza que deseja restaurar o cardápio padrão de exemplo? Todas as alterações serão substituídas.')) {
+    if (confirm('Tem certeza que deseja restaurar o cardápio padrão de exemplo (4 semanas)?')) {
       const reset = resetClientMenu();
       setWeeks(reset);
+      setActiveWeekIndex(0);
       fetch('/api/menu', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ weeks: reset }),
       }).catch(() => {});
-      showNotification('Cardápio restaurado para o padrão de exemplo!', 'success');
+      showNotification('Cardápio restaurado para o padrão original de 4 semanas!', 'success');
     }
   };
 
-  // Copiar cardápio da semana atual para a próxima semana
-  const handleCopyCurrentToNext = () => {
-    if (weeks.length < 2) return;
-    if (confirm('Deseja copiar as refeições e informações nutricionais da Semana Atual para a Próxima Semana?')) {
-      const updatedWeeks = [...weeks];
-      const source = updatedWeeks[0];
-      const target = updatedWeeks[1];
+  // Adicionar uma nova semana (máximo 4)
+  const handleAddWeek = () => {
+    if (weeks.length >= 4) {
+      alert('O sistema suporta no máximo 4 semanas de planejamento simultâneo.');
+      return;
+    }
+
+    const nextWeekNumber = weeks.length + 1;
+    const newWeek: Week = {
+      id: Date.now(),
+      week_number: nextWeekNumber,
+      start_date: '2025-04-07',
+      end_date: '2025-04-11',
+      is_current: false,
+      meals: [
+        {
+          id: Date.now() + 1,
+          week_id: Date.now(),
+          day_of_week: 'Segunda-feira',
+          date: '2025-04-07',
+          main_dish: 'Arroz branco, feijão carioca, carne moída refogada com legumes e purê.',
+          salad: 'Alface e tomate',
+          fruit: 'Maçã',
+        },
+        {
+          id: Date.now() + 2,
+          week_id: Date.now(),
+          day_of_week: 'Terça-feira',
+          date: '2025-04-08',
+          main_dish: 'Arroz integral, feijão preto, filé de frango ao molho e batata assada.',
+          salad: 'Cenoura ralada',
+          fruit: 'Banana prata',
+        },
+        {
+          id: Date.now() + 3,
+          week_id: Date.now(),
+          day_of_week: 'Quarta-feira',
+          date: '2025-04-09',
+          main_dish: 'Macarrão com carne e queijo ralado.',
+          salad: 'Pepino com hortelã',
+          fruit: 'Laranja',
+        },
+        {
+          id: Date.now() + 4,
+          week_id: Date.now(),
+          day_of_week: 'Quinta-feira',
+          date: '2025-04-10',
+          main_dish: 'Arroz branco, feijão carioca, iscas de carne e abobrinha.',
+          salad: 'Beterraba ralada',
+          fruit: 'Tangerina',
+        },
+        {
+          id: Date.now() + 5,
+          week_id: Date.now(),
+          day_of_week: 'Sexta-feira',
+          date: '2025-04-11',
+          main_dish: 'Galinhada caipira especial e feijão.',
+          salad: 'Folhas verdes mistas',
+          fruit: 'Melancia',
+        },
+      ],
+      nutritionInfo: {
+        id: Date.now(),
+        week_id: Date.now(),
+        energy_kcal: 700.0,
+        carbohydrates_g: 95.0,
+        carbohydrates_vet_percent: 55.0,
+        proteins_g: 36.0,
+        proteins_vet_percent: 21.0,
+        lipids_g: 19.0,
+        lipids_vet_percent: 24.0,
+      },
+    };
+
+    setWeeks([...weeks, newWeek]);
+    setActiveWeekIndex(weeks.length);
+    showNotification(`Semana ${nextWeekNumber} adicionada!`, 'success');
+  };
+
+  // Remover a semana ativa (mínimo 1)
+  const handleRemoveWeek = () => {
+    if (weeks.length <= 1) {
+      alert('Você deve manter pelo menos 1 semana cadastrada.');
+      return;
+    }
+
+    if (confirm(`Tem certeza que deseja remover a Semana ${currentWeek.week_number}?`)) {
+      const updated = weeks.filter((_, idx) => idx !== activeWeekIndex);
+      setWeeks(updated);
+      setActiveWeekIndex(Math.max(0, activeWeekIndex - 1));
+      showNotification('Semana removida com sucesso.', 'success');
+    }
+  };
+
+  // Definir como semana atual
+  const handleSetAsCurrent = () => {
+    const updated = weeks.map((w, idx) => ({
+      ...w,
+      is_current: idx === activeWeekIndex,
+    }));
+    setWeeks(updated);
+    showNotification(`Semana ${currentWeek.week_number} definida como Semana Atual em vigor!`, 'success');
+  };
+
+  // Copiar cardápio de outra semana
+  const handleCopyFromWeek = (sourceIndex: number) => {
+    if (sourceIndex === activeWeekIndex) return;
+    const source = weeks[sourceIndex];
+    if (!source) return;
+
+    if (confirm(`Deseja copiar o cardápio da Semana ${source.week_number} para a Semana ${currentWeek.week_number}?`)) {
+      const updated = [...weeks];
+      const target = updated[activeWeekIndex];
 
       target.meals = source.meals.map((m, idx) => ({
         ...m,
@@ -116,8 +223,8 @@ export default function AdminDashboardPage() {
         };
       }
 
-      setWeeks(updatedWeeks);
-      showNotification('Refeições copiadas com sucesso para a Próxima Semana! Não se esqueça de salvar.');
+      setWeeks(updated);
+      showNotification(`Refeições copiadas da Semana ${source.week_number} com sucesso!`, 'success');
     }
   };
 
@@ -173,7 +280,7 @@ export default function AdminDashboardPage() {
 
   // Remover dia de refeição
   const handleRemoveMeal = (mealIndex: number) => {
-    if (confirm('Tem certeza que deseja remover esta refeição?')) {
+    if (confirm('Tem certeza que deseja remover este dia do cardápio?')) {
       setWeeks((prev) => {
         const updated = [...prev];
         const currentMeals = updated[activeWeekIndex].meals.filter((_, idx) => idx !== mealIndex);
@@ -217,19 +324,25 @@ export default function AdminDashboardPage() {
       <Navbar isAdmin={true} />
 
       <main className="container content py-4 pb-5">
-        {/* TOPO DO PAINEL */}
+        {/* CABEÇALHO DO PAINEL */}
         <div className="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
           <div>
-            <h1 className="fw-bold mb-1 fs-3">Painel de Gerenciamento do Cardápio</h1>
+            <div className="d-flex align-items-center gap-2 mb-1">
+              <span className="badge bg-danger text-white rounded-pill px-3 py-1 fw-bold">
+                Painel Administrativo
+              </span>
+              <span className="text-muted small">• Até 4 Semanas de Planejamento</span>
+            </div>
+            <h1 className="fw-bold mb-1 fs-3">Gerenciador de Cardápios • ETEC Boituva</h1>
             <p className="text-muted small mb-0">
-              Edite as refeições, saladas, frutas e tabela nutricional dos alunos da ETEC Boituva.
+              Configure as semanas letivas, pratos, saladas frescas, frutas e os dados nutricionais dos alunos.
             </p>
           </div>
 
           <div className="d-flex align-items-center gap-2">
             <Link href="/" target="_blank" className="btn btn-outline-secondary btn-sm rounded-pill px-3">
               <i className="bi bi-box-arrow-up-right me-1"></i>
-              Visualizar Cardápio Público
+              Ver Site Público
             </Link>
 
             <button onClick={handleLogout} className="btn btn-outline-danger btn-sm rounded-pill px-3">
@@ -239,7 +352,7 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* NOTIFICAÇÃO */}
+        {/* NOTIFICAÇÕES */}
         {notification && (
           <div
             className={`alert alert-${notification.type} alert-dismissible fade show d-flex align-items-center gap-2 mb-4`}
@@ -259,49 +372,44 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* ABAS DE SELEÇÃO: SEMANA ATUAL VS PRÓXIMA SEMANA */}
+        {/* ABAS DE NAVEGAÇÃO DE ATÉ 4 SEMANAS */}
         <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
           <ul className="nav nav-pills nav-pills-etec">
-            <li className="nav-item">
-              <button
-                type="button"
-                className={`nav-link ${activeWeekIndex === 0 ? 'active' : ''}`}
-                onClick={() => setActiveWeekIndex(0)}
-              >
-                <i className="bi bi-calendar-check me-2"></i>
-                Semana Atual {weeks[0] ? `(Semana ${weeks[0].week_number})` : ''}
-              </button>
-            </li>
-            <li className="nav-item">
-              <button
-                type="button"
-                className={`nav-link ${activeWeekIndex === 1 ? 'active' : ''}`}
-                onClick={() => setActiveWeekIndex(1)}
-              >
-                <i className="bi bi-arrow-right-circle me-2"></i>
-                Próxima Semana {weeks[1] ? `(Semana ${weeks[1].week_number})` : ''}
-              </button>
-            </li>
+            {weeks.map((week, idx) => (
+              <li key={week.id} className="nav-item">
+                <button
+                  type="button"
+                  className={`nav-link ${activeWeekIndex === idx ? 'active' : ''}`}
+                  onClick={() => setActiveWeekIndex(idx)}
+                >
+                  <i className={`bi ${week.is_current ? 'bi-star-fill text-warning' : 'bi-calendar3'} me-2`}></i>
+                  Semana {week.week_number}
+                  {week.is_current && <span className="badge bg-light text-success ms-2">Atual</span>}
+                </button>
+              </li>
+            ))}
+
+            {weeks.length < 4 && (
+              <li className="nav-item">
+                <button
+                  type="button"
+                  className="btn btn-outline-success rounded-pill px-3 py-2 ms-2"
+                  onClick={handleAddWeek}
+                  title="Adicionar mais uma semana (máximo 4)"
+                >
+                  <i className="bi bi-plus-circle me-1"></i>
+                  + Nova Semana ({weeks.length}/4)
+                </button>
+              </li>
+            )}
           </ul>
 
-          <div className="d-flex gap-2">
-            {activeWeekIndex === 1 && (
-              <button
-                type="button"
-                className="btn btn-outline-primary btn-sm rounded-pill"
-                onClick={handleCopyCurrentToNext}
-                title="Copiar itens da semana 1 para a semana 2"
-              >
-                <i className="bi bi-files me-1"></i>
-                Copiar da Semana Atual
-              </button>
-            )}
-
+          <div className="d-flex gap-2 align-items-center flex-wrap">
             <button
               type="button"
               className="btn btn-outline-secondary btn-sm rounded-pill"
               onClick={handleReset}
-              title="Restaurar dados padrões de exemplo"
+              title="Restaurar dados padrões de exemplo para 4 semanas"
             >
               <i className="bi bi-arrow-counterclockwise me-1"></i>
               Restaurar Padrão
@@ -321,28 +429,60 @@ export default function AdminDashboardPage() {
               ) : (
                 <>
                   <i className="bi bi-floppy2-fill me-2"></i>
-                  Salvar Alterações
+                  Salvar Todas as Semanas
                 </>
               )}
             </button>
           </div>
         </div>
 
-        {/* DETALHES DA SEMANA */}
+        {/* DETALHES DA SEMANA ATIVA */}
         {currentWeek && (
           <>
             <div className="admin-card">
-              <div className="admin-header d-flex justify-content-between align-items-center">
-                <h5 className="fw-bold mb-0">
-                  <i className="bi bi-sliders me-2 text-success"></i>
-                  Configurações da {activeWeekIndex === 0 ? 'Semana Atual' : 'Próxima Semana'}
-                </h5>
-                <span className="badge bg-light text-dark border">ID: {currentWeek.id}</span>
+              <div className="admin-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                  <h5 className="fw-bold mb-1 d-flex align-items-center gap-2">
+                    <i className="bi bi-sliders text-success"></i>
+                    <span>Configurações da Semana {currentWeek.week_number}</span>
+                    {currentWeek.is_current ? (
+                      <span className="badge bg-success">Semana Atual em Vigor</span>
+                    ) : (
+                      <span className="badge bg-secondary">Planejamento Futuro</span>
+                    )}
+                  </h5>
+                  <small className="text-muted">Ajuste o número da semana, as datas limites e a vigência.</small>
+                </div>
+
+                <div className="d-flex gap-2">
+                  {!currentWeek.is_current && (
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-success rounded-pill"
+                      onClick={handleSetAsCurrent}
+                    >
+                      <i className="bi bi-check2-circle me-1"></i>
+                      Definir como Semana Atual
+                    </button>
+                  )}
+
+                  {weeks.length > 1 && (
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-danger rounded-pill"
+                      onClick={handleRemoveWeek}
+                      title="Excluir esta semana"
+                    >
+                      <i className="bi bi-trash3 me-1"></i>
+                      Excluir Semana
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="row g-3">
                 <div className="col-12 col-md-4">
-                  <label className="form-label fw-semibold small">Número da Semana</label>
+                  <label className="form-label fw-semibold small text-gray-700">Número da Semana</label>
                   <input
                     type="number"
                     className="form-control"
@@ -352,7 +492,7 @@ export default function AdminDashboardPage() {
                 </div>
 
                 <div className="col-12 col-md-4">
-                  <label className="form-label fw-semibold small">Data Inicial (Segunda)</label>
+                  <label className="form-label fw-semibold small text-gray-700">Data Inicial (Segunda)</label>
                   <input
                     type="date"
                     className="form-control"
@@ -362,7 +502,7 @@ export default function AdminDashboardPage() {
                 </div>
 
                 <div className="col-12 col-md-4">
-                  <label className="form-label fw-semibold small">Data Final (Sexta)</label>
+                  <label className="form-label fw-semibold small text-gray-700">Data Final (Sexta)</label>
                   <input
                     type="date"
                     className="form-control"
@@ -379,10 +519,10 @@ export default function AdminDashboardPage() {
                 <div>
                   <h5 className="fw-bold mb-1">
                     <i className="bi bi-egg-fried me-2 text-warning"></i>
-                    Refeições Diárias (Merenda, Salada e Fruta)
+                    Refeições Diárias da Semana {currentWeek.week_number}
                   </h5>
                   <p className="text-muted small mb-0">
-                    Preencha o cardápio servido para cada dia da semana.
+                    Cadastre a merenda principal, a salada do dia e a fruta de cada dia.
                   </p>
                 </div>
 
@@ -399,21 +539,19 @@ export default function AdminDashboardPage() {
               <div className="row g-4">
                 {currentWeek.meals.map((meal, mIndex) => (
                   <div key={meal.id || mIndex} className="col-12 col-lg-6">
-                    <div className="border rounded-4 p-3 bg-light h-100 position-relative">
+                    <div className="border rounded-4 p-3 bg-light h-100 position-relative shadow-sm">
                       <div className="d-flex justify-content-between align-items-center mb-3">
-                        <div className="d-flex align-items-center gap-2">
-                          <span className="badge bg-success rounded-pill px-3 py-2">
-                            {meal.day_of_week || `Dia ${mIndex + 1}`}
-                          </span>
-                        </div>
+                        <span className="badge bg-success rounded-pill px-3 py-2 fw-bold">
+                          {meal.day_of_week || `Dia ${mIndex + 1}`}
+                        </span>
 
                         <button
                           type="button"
                           className="btn btn-outline-danger btn-sm border-0"
                           onClick={() => handleRemoveMeal(mIndex)}
-                          title="Remover refeição"
+                          title="Remover refeição deste dia"
                         >
-                          <i className="bi bi-trash3"></i>
+                          <i className="bi bi-trash3-fill text-danger"></i>
                         </button>
                       </div>
 
@@ -461,29 +599,29 @@ export default function AdminDashboardPage() {
                       <div className="mb-2">
                         <label className="form-label small fw-semibold text-secondary mb-1">
                           <i className="bi bi-flower1 me-1 text-success"></i>
-                          Salada (opcional)
+                          Salada Fresca
                         </label>
                         <input
                           type="text"
                           className="form-control form-control-sm"
                           value={meal.salad || ''}
                           onChange={(e) => updateMealField(mIndex, 'salad', e.target.value)}
-                          placeholder="Ex: Alface americana com tomate"
+                          placeholder="Ex: Alface americana com tomate fresco"
                         />
                       </div>
 
                       {/* FRUTA */}
                       <div>
-                        <label className="form-label small fw-semibold text-secondary mb-1">
+                        <label className="form-label small fw-semibold text-danger mb-1">
                           <i className="bi bi-apple me-1 text-danger"></i>
-                          Fruta da época (opcional)
+                          Fruta da Época
                         </label>
                         <input
                           type="text"
                           className="form-control form-control-sm"
                           value={meal.fruit || ''}
                           onChange={(e) => updateMealField(mIndex, 'fruit', e.target.value)}
-                          placeholder="Ex: Banana prata, maçã, melancia..."
+                          placeholder="Ex: Banana prata, maçã, melancia fresca..."
                         />
                       </div>
                     </div>
@@ -497,10 +635,10 @@ export default function AdminDashboardPage() {
               <div className="admin-header">
                 <h5 className="fw-bold mb-1">
                   <i className="bi bi-bar-chart-fill me-2 text-primary"></i>
-                  Composição Nutricional (Média Semanal)
+                  Composição Nutricional Média (Semana {currentWeek.week_number})
                 </h5>
                 <p className="text-muted small mb-0">
-                  Insira os valores médios nutricionais calculados para as refeições desta semana.
+                  Insira os valores médios nutricionais calculados para esta semana letiva.
                 </p>
               </div>
 
@@ -508,7 +646,7 @@ export default function AdminDashboardPage() {
                 <div className="row g-3">
                   <div className="col-12 col-md-3">
                     <div className="p-3 border rounded-3 bg-light">
-                      <label className="form-label fw-bold small text-success">
+                      <label className="form-label fw-bold small text-warning-emphasis">
                         <i className="bi bi-lightning-charge-fill me-1"></i>
                         Energia (kcal)
                       </label>
@@ -526,7 +664,7 @@ export default function AdminDashboardPage() {
 
                   <div className="col-12 col-md-3">
                     <div className="p-3 border rounded-3 bg-light">
-                      <label className="form-label fw-bold small text-warning-emphasis">
+                      <label className="form-label fw-bold small text-success">
                         <i className="bi bi-basket2-fill me-1"></i>
                         Carboidratos (g)
                       </label>
@@ -617,7 +755,7 @@ export default function AdminDashboardPage() {
               )}
             </div>
 
-            {/* BOTÃO FLUTUANTE / FIXO PARA SALVAR */}
+            {/* BOTÃO PRINCIPAL PARA SALVAR */}
             <div className="d-flex justify-content-end gap-3 mt-4">
               <button
                 type="button"
@@ -628,12 +766,12 @@ export default function AdminDashboardPage() {
                 {saving ? (
                   <>
                     <span className="spinner-border spinner-border-sm me-2" role="status"></span>
-                    Salvando alterações...
+                    Salvando cardápios...
                   </>
                 ) : (
                   <>
                     <i className="bi bi-floppy2-fill me-2"></i>
-                    Salvar Cardápio Completo
+                    Salvar Cardápio Completo (4 Semanas)
                   </>
                 )}
               </button>
@@ -646,4 +784,3 @@ export default function AdminDashboardPage() {
     </>
   );
 }
-

@@ -11,7 +11,7 @@ import { Footer } from '@/components/Footer';
 
 export default function HomePage() {
   const [weeks, setWeeks] = useState<Week[]>(initialWeeks);
-  const [selectedFilter, setSelectedFilter] = useState<'current' | 'next' | 'all'>('current');
+  const [selectedFilter, setSelectedFilter] = useState<string | 'all'>('current');
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -35,15 +35,18 @@ export default function HomePage() {
   }, []);
 
   const currentWeek = weeks.find((w) => w.is_current) || weeks[0];
-  const nextWeek = weeks.find((w) => !w.is_current) || weeks[1];
+
+  // Limita a exibição a no máximo 4 semanas
+  const availableWeeks = weeks.slice(0, 4);
 
   let displayWeeks: Week[] = [];
-  if (selectedFilter === 'current' && currentWeek) {
-    displayWeeks = [currentWeek];
-  } else if (selectedFilter === 'next' && nextWeek) {
-    displayWeeks = [nextWeek];
+  if (selectedFilter === 'all') {
+    displayWeeks = availableWeeks;
+  } else if (selectedFilter === 'current') {
+    displayWeeks = currentWeek ? [currentWeek] : availableWeeks.slice(0, 1);
   } else {
-    displayWeeks = weeks;
+    const found = availableWeeks.find((w) => String(w.id) === String(selectedFilter));
+    displayWeeks = found ? [found] : (currentWeek ? [currentWeek] : availableWeeks.slice(0, 1));
   }
 
   return (
@@ -53,41 +56,45 @@ export default function HomePage() {
       <Hero />
 
       <main className="container content pb-5">
-        {/* FILTROS / ABAS DE SEMANA */}
+        {/* SELETOR DE ATÉ 4 SEMANAS */}
         <div className="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
-          <div className="week-tabs-container mb-0">
+          <div className="week-tabs-container mb-0 w-100 w-lg-auto">
+            {/* Botão Semana Atual */}
             <button
               type="button"
               className={`week-tab-btn ${selectedFilter === 'current' ? 'active' : ''}`}
               onClick={() => setSelectedFilter('current')}
             >
-              <i className="bi bi-calendar-check-fill"></i>
+              <i className="bi bi-star-fill text-warning"></i>
               <span>Semana Atual {currentWeek ? `(Semana ${currentWeek.week_number})` : ''}</span>
+              <span className="tab-badge-current">Hoje</span>
             </button>
 
-            <button
-              type="button"
-              className={`week-tab-btn ${selectedFilter === 'next' ? 'active' : ''}`}
-              onClick={() => setSelectedFilter('next')}
-            >
-              <i className="bi bi-arrow-right-circle-fill"></i>
-              <span>Próxima Semana {nextWeek ? `(Semana ${nextWeek.week_number})` : ''}</span>
-            </button>
+            {/* Botões individuais para cada uma das outras semanas até 4 */}
+            {availableWeeks
+              .filter((w) => w.id !== currentWeek?.id)
+              .map((w) => (
+                <button
+                  key={w.id}
+                  type="button"
+                  className={`week-tab-btn ${selectedFilter === String(w.id) ? 'active' : ''}`}
+                  onClick={() => setSelectedFilter(String(w.id))}
+                >
+                  <i className="bi bi-calendar-event"></i>
+                  <span>Semana {w.week_number}</span>
+                </button>
+              ))}
 
+            {/* Botão Ver Todas as Semanas */}
             <button
               type="button"
-              className={`week-tab-btn ${selectedFilter === 'all' ? 'active' : ''}`}
+              className={`week-tab-btn ${selectedFilter === 'all' ? 'active-all' : ''}`}
               onClick={() => setSelectedFilter('all')}
             >
               <i className="bi bi-collection-fill"></i>
-              <span>Ver Ambas</span>
+              <span>Ver Todas ({availableWeeks.length} semanas)</span>
             </button>
           </div>
-
-          <span className="text-muted small">
-            <i className="bi bi-clock-history me-1"></i>
-            Atualizado recentemente
-          </span>
         </div>
 
         {/* LISTAGEM DE SEMANAS */}
@@ -96,7 +103,7 @@ export default function HomePage() {
             <WeekCard
               key={week.id}
               week={week}
-              badgeLabel={week.is_current ? 'Cardápio em vigor' : 'Cardápio programado'}
+              badgeLabel={week.is_current ? 'Cardápio em vigor' : `Semana ${week.week_number} programada`}
             />
           ))
         ) : (
@@ -112,4 +119,3 @@ export default function HomePage() {
     </>
   );
 }
-
