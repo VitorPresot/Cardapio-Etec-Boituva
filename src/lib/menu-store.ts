@@ -4,6 +4,7 @@ import { addDays, getTodayInSaoPaulo, getWeekDurationInDays, toDateFromISO } fro
 import { MenuStateDocument, Week } from '@/types/menu';
 
 const DEFAULT_CYCLE_MODE = false;
+const TABLE_NAME = 'menu_state';
 
 function sortWeeks(weeks: Week[]): Week[] {
   return [...weeks].sort((left, right) => {
@@ -81,23 +82,28 @@ function reconcileCycle(weeks: Week[], cycleMode: boolean): Week[] {
   return markCurrentWeek(activeWeeks);
 }
 
+function normalizeState(record: any): { weeks: Week[]; cycle_mode: boolean; updated_at: string } {
+  const weeks = Array.isArray(record?.weeks) ? record.weeks as Week[] : initialWeeks;
+  const cycleMode = Boolean(record?.cycle_mode ?? DEFAULT_CYCLE_MODE);
+  return {
+    weeks: reconcileCycle(weeks, cycleMode),
+    cycle_mode: cycleMode,
+    updated_at: String(record?.updated_at || new Date().toISOString()),
+  };
+}
+
 export async function getMenuState(): Promise<{ weeks: Week[]; cycle_mode: boolean; updated_at: string }> {
   try {
     const collection = await getMenuCollection();
-    const record = await collection.findOne({});
-    if (record && Array.isArray(record.weeks)) {
-      const cycleMode = Boolean(record.cycle_mode ?? DEFAULT_CYCLE_MODE);
-      const merged = reconcileCycle(record.weeks as Week[], cycleMode);
-      const updated = {
-        weeks: merged,
-        cycle_mode: cycleMode,
-        updated_at: new Date().toISOString(),
-      };
-      await collection.updateOne({}, { $set: { weeks: merged, cycle_mode: cycleMode, updated_at: updated.updated_at } }, { upsert: true });
-      return updated;
+    const { data, error } = await collection.select('*').eq('id', 'default').maybeSingle();
+
+    if (!error && data) {
+      const next = normalizeState(data);
+      await collection.upsert({ id: 'default', ...next }, { onConflict: 'id' });
+      return next;
     }
   } catch {
-    // fallback to seeded data when Mongo is not configured or unavailable
+    // fallback to seeded data when Supabase is not configured or unavailable
   }
 
   const seeded = reconcileCycle(initialWeeks, DEFAULT_CYCLE_MODE);
@@ -118,11 +124,15 @@ export async function saveMenuState(weeks: Week[], cycleMode: boolean): Promise<
 
   try {
     const collection = await getMenuCollection();
-    await collection.updateOne({}, { $set: { weeks: normalized, cycle_mode: state.cycle_mode, updated_at: state.updated_at } }, { upsert: true });
-    return state;
+    const { error } = await collection.upsert({ id: 'default', ...state }, { onConflict: 'id' });
+    if (!error) {
+      return state;
+    }
   } catch {
-    return state;
+    // no-op fallback
   }
+
+  return state;
 }
 
 export async function processCronExpiredWeeks(): Promise<{ weeks: Week[]; cycle_mode: boolean; updated_at: string }> {
@@ -136,9 +146,9 @@ export async function processCronExpiredWeeks(): Promise<{ weeks: Week[]; cycle_
 
   try {
     const collection = await getMenuCollection();
-    await collection.updateOne({}, { $set: { weeks: next, cycle_mode: state.cycle_mode, updated_at: updated.updated_at } }, { upsert: true });
+    await collection.upsert({ id: 'default', ...updated }, { onConflict: 'id' });
   } catch {
-    // ignore if Mongo is unavailable in local development
+    // ignore if Supabase is unavailable in local development
   }
 
   return updated;
