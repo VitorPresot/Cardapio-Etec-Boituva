@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminSessionFromRequest, verifyAdminSessionValue } from '@/lib/auth-server';
+import { updateSession } from '@/utils/supabase/middleware';
 
 export async function middleware(request: NextRequest) {
+  const response = await updateSession(request);
   const { pathname } = request.nextUrl;
 
   if (pathname === '/admin/login') {
@@ -11,7 +13,7 @@ export async function middleware(request: NextRequest) {
       url.pathname = '/admin';
       return NextResponse.redirect(url);
     }
-    return NextResponse.next();
+    return response;
   }
 
   if (pathname === '/admin' || pathname.startsWith('/admin/')) {
@@ -23,7 +25,7 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {
