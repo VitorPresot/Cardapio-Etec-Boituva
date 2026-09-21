@@ -1,24 +1,17 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { isAdminAuthenticated, setAdminSession, DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASS } from '@/lib/auth';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState(DEFAULT_ADMIN_EMAIL);
-  const [password, setPassword] = useState(DEFAULT_ADMIN_PASS);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (isAdminAuthenticated()) {
-      router.push('/admin');
-    }
-  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,19 +28,12 @@ export default function AdminLoginPage() {
       const data = await res.json();
 
       if (data.success) {
-        setAdminSession();
         router.push('/admin');
       } else {
         setError(data.error || 'Credenciais inválidas. Verifique seu e-mail e senha.');
       }
     } catch {
-      // Fallback para autenticação local
-      if (email === DEFAULT_ADMIN_EMAIL && password === DEFAULT_ADMIN_PASS) {
-        setAdminSession();
-        router.push('/admin');
-      } else {
-        setError('Erro ao conectar ao servidor de autenticação.');
-      }
+      setError('Erro ao conectar ao servidor de autenticação.');
     } finally {
       setLoading(false);
     }
@@ -112,12 +98,6 @@ export default function AdminLoginPage() {
                       required
                     />
                   </div>
-                </div>
-
-                <div className="alert alert-info py-2 small mb-4">
-                  <i className="bi bi-info-circle me-1"></i>
-                  Credenciais padrão de teste:<br />
-                  <strong>admin@etec.sp.gov.br</strong> / <strong>etec123</strong>
                 </div>
 
                 <button

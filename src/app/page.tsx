@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { Week } from '@/types/menu';
-import { getClientMenu, saveClientMenu } from '@/lib/storage';
 import { initialWeeks } from '@/data/initialData';
 import { Navbar } from '@/components/Navbar';
 import { Hero } from '@/components/Hero';
@@ -15,22 +14,14 @@ export default function HomePage() {
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    // Carrega do localStorage inicial ou tenta sincronizar via API
-    const localData = getClientMenu();
-    if (localData && localData.length > 0) {
-      setWeeks(localData);
-    }
-
-    // Busca dados atualizados da API
     fetch('/api/menu')
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.weeks) && data.weeks.length > 0) {
           setWeeks(data.weeks);
-          saveClientMenu(data.weeks);
         }
       })
-      .catch((err) => console.log('Usando dados offline/locais:', err))
+      .catch((err) => console.log('Usando dados iniciais:', err))
       .finally(() => setLoading(false));
   }, []);
 

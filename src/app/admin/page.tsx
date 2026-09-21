@@ -4,8 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Week, Meal, NutritionInfo } from '@/types/menu';
-import { getClientMenu, saveClientMenu, resetClientMenu } from '@/lib/storage';
-import { isAdminAuthenticated, clearAdminSession } from '@/lib/auth';
 import { initialWeeks } from '@/data/initialData';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
@@ -15,35 +13,25 @@ export default function AdminDashboardPage() {
   const [weeks, setWeeks] = useState<Week[]>(initialWeeks);
   const [activeWeekIndex, setActiveWeekIndex] = useState<number>(0);
   const [saving, setSaving] = useState(false);
+  const [cycleMode, setCycleMode] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'danger'; text: string } | null>(null);
 
-  // Verificação de autenticação
   useEffect(() => {
-    if (!isAdminAuthenticated()) {
-      router.push('/admin/login');
-      return;
-    }
-
-    const localData = getClientMenu();
-    if (localData && localData.length > 0) {
-      setWeeks(localData);
-    }
-
     fetch('/api/menu')
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.weeks) && data.weeks.length > 0) {
           setWeeks(data.weeks);
-          saveClientMenu(data.weeks);
+          setCycleMode(Boolean(data.cycle_mode));
         }
       })
-      .catch((err) => console.log('Usando dados offline:', err));
-  }, [router]);
+      .catch((err) => console.log('Usando dados iniciais:', err));
+  }, []);
 
   const currentWeek = weeks[activeWeekIndex] || weeks[0];
 
-  const handleLogout = () => {
-    clearAdminSession();
+  const handleLogout = async () => {
+    await fetch('/api/auth', { method: 'DELETE' });
     router.push('/admin/login');
   };
 
@@ -54,42 +42,38 @@ export default function AdminDashboardPage() {
     }, 4500);
   };
 
-  // Salvar no servidor e localStorage
   const handleSave = async () => {
     setSaving(true);
     try {
-      saveClientMenu(weeks);
-
       const res = await fetch('/api/menu', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ weeks }),
+        body: JSON.stringify({ weeks, cycle_mode: cycleMode }),
       });
 
       const data = await res.json();
       if (data.success) {
-        showNotification('Cardápio das 4 semanas salvo com sucesso! Já está visível publicamente.');
+        showNotification('Cardápio salvo com sucesso! Já está visível publicamente.');
       } else {
-        showNotification('Salvo localmente com sucesso no navegador!', 'success');
+        showNotification(data.error || 'Não foi possível salvar o cardápio.', 'danger');
       }
     } catch {
-      saveClientMenu(weeks);
-      showNotification('Salvo localmente no navegador com sucesso!', 'success');
+      showNotification('Não foi possível salvar o cardápio no servidor.', 'danger');
     } finally {
       setSaving(false);
     }
   };
 
-  // Restaurar dados padrão de teste
   const handleReset = () => {
     if (confirm('Tem certeza que deseja restaurar o cardápio padrão de exemplo (4 semanas)?')) {
-      const reset = resetClientMenu();
+      const reset = initialWeeks;
       setWeeks(reset);
+      setCycleMode(false);
       setActiveWeekIndex(0);
       fetch('/api/menu', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ weeks: reset }),
+        body: JSON.stringify({ weeks: reset, cycle_mode: false }),
       }).catch(() => {});
       showNotification('Cardápio restaurado para o padrão original de 4 semanas!', 'success');
     }
@@ -374,35 +358,47 @@ export default function AdminDashboardPage() {
 
         {/* ABAS DE NAVEGAÇÃO DE ATÉ 4 SEMANAS */}
         <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
-          <ul className="nav nav-pills nav-pills-etec">
-            {weeks.map((week, idx) => (
-              <li key={week.id} className="nav-item">
-                <button
-                  type="button"
-                  className={`nav-link ${activeWeekIndex === idx ? 'active' : ''}`}
-                  onClick={() => setActiveWeekIndex(idx)}
-                >
-                  <i className={`bi ${week.is_current ? 'bi-star-fill text-warning' : 'bi-calendar3'} me-2`}></i>
-                  Semana {week.week_number}
-                  {week.is_current && <span className="badge bg-light text-success ms-2">Atual</span>}
-                </button>
-              </li>
-            ))}
+          <div className="d-flex flex-column flex-md-row align-items-md-center gap-3">
+            <ul className="nav nav-pills nav-pills-etec">
+              {weeks.map((week, idx) => (
+                <li key={week.id} className="nav-item">
+                  <button
+                    type="button"
+                    className={`nav-link ${activeWeekIndex === idx ? 'active' : ''}`}
+                    onClick={() => setActiveWeekIndex(idx)}
+                  >
+                    <i className={`bi ${week.is_current ? 'bi-star-fill text-warning' : 'bi-calendar3'} me-2`}></i>
+                    Semana {week.week_number}
+                    {week.is_current && <span className="badge bg-light text-success ms-2">Atual</span>}
+                  </button>
+                </li>
+              ))}
 
-            {weeks.length < 4 && (
-              <li className="nav-item">
-                <button
-                  type="button"
-                  className="btn btn-outline-success rounded-pill px-3 py-2 ms-2"
-                  onClick={handleAddWeek}
-                  title="Adicionar mais uma semana (máximo 4)"
-                >
-                  <i className="bi bi-plus-circle me-1"></i>
-                  + Nova Semana ({weeks.length}/4)
-                </button>
-              </li>
-            )}
-          </ul>
+              {weeks.length < 4 && (
+                <li className="nav-item">
+                  <button
+                    type="button"
+                    className="btn btn-outline-success rounded-pill px-3 py-2 ms-2"
+                    onClick={handleAddWeek}
+                    title="Adicionar mais uma semana (máximo 4)"
+                  >
+                    <i className="bi bi-plus-circle me-1"></i>
+                    + Nova Semana ({weeks.length}/4)
+                  </button>
+                </li>
+              )}
+            </ul>
+
+            <label className="form-check form-switch mb-0 d-flex align-items-center gap-2">
+              <input
+                className="form-check-input"
+                type="checkbox"
+                checked={cycleMode}
+                onChange={(event) => setCycleMode(event.target.checked)}
+              />
+              <span className="form-check-label small fw-semibold">Modo cíclico</span>
+            </label>
+          </div>
 
           <div className="d-flex gap-2 align-items-center flex-wrap">
             <button

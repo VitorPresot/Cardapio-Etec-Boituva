@@ -1,49 +1,31 @@
 import { NextResponse } from 'next/server';
-import { initialWeeks } from '@/data/initialData';
+import { getAdminSessionFromRequest, verifyAdminSessionValue } from '@/lib/auth-server';
+import { getMenuState, saveMenuState } from '@/lib/menu-store';
 import { Week } from '@/types/menu';
-import fs from 'fs';
-import path from 'path';
 
-// Arquivo temporário para persistência em servidor ou ambiente local
-const TMP_FILE = path.join('/tmp', 'etec_cardapio_data.json');
-
-// Memória em runtime
-let cachedWeeks: Week[] = initialWeeks;
-
-function loadServerWeeks(): Week[] {
-  try {
-    if (fs.existsSync(TMP_FILE)) {
-      const data = fs.readFileSync(TMP_FILE, 'utf-8');
-      const parsed = JSON.parse(data);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        cachedWeeks = parsed;
-        return parsed;
-      }
-    }
-  } catch {
-    // fallback para cached
-  }
-  return cachedWeeks;
-}
-
-function saveServerWeeks(weeks: Week[]): void {
-  cachedWeeks = weeks;
-  try {
-    fs.writeFileSync(TMP_FILE, JSON.stringify(weeks, null, 2), 'utf-8');
-  } catch {
-    // se falhar em ambiente read-only, cachedWeeks na memória ainda funciona
-  }
+async function requireAdmin(request: Request) {
+  const sessionCookie = getAdminSessionFromRequest(request);
+  return verifyAdminSessionValue(sessionCookie);
 }
 
 export async function GET() {
-  const weeks = loadServerWeeks();
+  const state = await getMenuState();
   return NextResponse.json({
     success: true,
-    weeks,
+    weeks: state.weeks,
+    cycle_mode: state.cycle_mode,
+    updated_at: state.updated_at,
   });
 }
 
 export async function POST(request: Request) {
+  if (!(await requireAdmin(request))) {
+    return NextResponse.json(
+      { success: false, error: 'Não autorizado' },
+      { status: 401 }
+    );
+  }
+
   try {
     const body = await request.json();
     if (!body || !Array.isArray(body.weeks)) {
@@ -53,12 +35,15 @@ export async function POST(request: Request) {
       );
     }
 
-    saveServerWeeks(body.weeks);
+    const weeks = body.weeks as Week[];
+    const cycleMode = Boolean(body.cycle_mode);
+    const state = await saveMenuState(weeks, cycleMode);
 
     return NextResponse.json({
       success: true,
       message: 'Cardápio atualizado com sucesso',
-      weeks: body.weeks,
+      weeks: state.weeks,
+      cycle_mode: state.cycle_mode,
     });
   } catch (error) {
     console.error('Erro na API /api/menu:', error);

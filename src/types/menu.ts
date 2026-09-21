@@ -30,6 +30,18 @@ export interface Week {
   nutritionInfo?: NutritionInfo;
 }
 
+export interface MenuSettings {
+  cycle_mode: boolean;
+  updated_at?: string;
+}
+
+export interface MenuStateDocument {
+  _id: string;
+  weeks: Week[];
+  cycle_mode: boolean;
+  updated_at: string;
+}
+
 export interface User {
   id: string | number;
   name: string;
