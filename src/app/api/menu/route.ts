@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import { getAdminSessionFromRequest, verifyAdminSessionValue } from '@/lib/auth-server';
 import { getMenuState, saveMenuState } from '@/lib/menu-store';
-import { Week } from '@/types/menu';
+import { menuStateInputSchema } from '@/lib/menu-schema';
+import { ZodError } from 'zod';
+
+export const runtime = 'nodejs';
 
 async function requireAdmin(request: Request) {
   const sessionCookie = getAdminSessionFromRequest(request);
@@ -9,13 +12,16 @@ async function requireAdmin(request: Request) {
 }
 
 export async function GET() {
-  const state = await getMenuState();
-  return NextResponse.json({
-    success: true,
-    weeks: state.weeks,
-    cycle_mode: state.cycle_mode,
-    updated_at: state.updated_at,
-  });
+  try {
+    const state = await getMenuState();
+    return NextResponse.json({ success: true, ...state });
+  } catch (error) {
+    console.error('Erro ao carregar o cardápio:', error);
+    return NextResponse.json(
+      { success: false, error: 'Persistência do cardápio indisponível' },
+      { status: 503 }
+    );
+  }
 }
 
 export async function POST(request: Request) {
@@ -28,16 +34,8 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    if (!body || !Array.isArray(body.weeks)) {
-      return NextResponse.json(
-        { success: false, error: 'Formato de dados inválido' },
-        { status: 400 }
-      );
-    }
-
-    const weeks = body.weeks as Week[];
-    const cycleMode = Boolean(body.cycle_mode);
-    const state = await saveMenuState(weeks, cycleMode);
+    const input = menuStateInputSchema.parse(body);
+    const state = await saveMenuState(input.weeks, input.cycle_mode);
 
     return NextResponse.json({
       success: true,
@@ -46,6 +44,12 @@ export async function POST(request: Request) {
       cycle_mode: state.cycle_mode,
     });
   } catch (error) {
+    if (error instanceof ZodError) {
+      return NextResponse.json(
+        { success: false, error: 'Dados inválidos', details: error.flatten() },
+        { status: 400 }
+      );
+    }
     console.error('Erro na API /api/menu:', error);
     return NextResponse.json(
       { success: false, error: 'Erro interno ao salvar cardápio' },
@@ -53,4 +57,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

@@ -1,27 +1,35 @@
-import { createClient } from '@supabase/supabase-js';
+import { Collection, Db, MongoClient } from 'mongodb';
+import { MenuStateDocument } from '@/types/menu';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const globalForMongo = globalThis as typeof globalThis & {
+  mongoClientPromise?: Promise<MongoClient>;
+};
 
-export function getSupabaseClient() {
-  const url = supabaseUrl;
-  const key = supabaseServiceKey || supabaseAnonKey;
-
-  if (!url || !key) {
-    throw new Error('Supabase environment variables are not configured');
+function getMongoUri(): string {
+  const uri = process.env.MONGODB_URI?.trim();
+  if (!uri) {
+    throw new Error('MONGODB_URI is not configured');
   }
-
-  return createClient(url, key, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-      detectSessionInUrl: false,
-    },
-  });
+  return uri;
 }
 
-export async function getMenuCollection() {
-  const supabase = getSupabaseClient();
-  return supabase.from('menu_state');
+export async function getMongoDatabase(): Promise<Db> {
+  const uri = getMongoUri();
+  const clientPromise =
+    globalForMongo.mongoClientPromise ??
+    new MongoClient(uri, {
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+    }).connect();
+
+  globalForMongo.mongoClientPromise = clientPromise;
+  const client = await clientPromise;
+  return client.db(process.env.MONGODB_DB?.trim() || undefined);
+}
+
+export async function getMenuCollection(): Promise<Collection<MenuStateDocument>> {
+  const database = await getMongoDatabase();
+  return database.collection<MenuStateDocument>(
+    process.env.MONGODB_COLLECTION?.trim() || 'menu_state'
+  );
 }

@@ -1,165 +1,128 @@
 import { initialWeeks } from '@/data/initialData';
 import { getMenuCollection } from '@/lib/mongo';
+import { menuStateSchema, MenuStateInput, weekSchema } from '@/lib/menu-schema';
 import { addDays, getTodayInSaoPaulo, getWeekDurationInDays, toDateFromISO } from '@/lib/date-utils';
 import { MenuStateDocument, Week } from '@/types/menu';
 
 const DEFAULT_CYCLE_MODE = false;
-const TABLE_NAME = 'menu_state';
+
+type MenuState = Omit<MenuStateDocument, '_id'>;
 
 function sortWeeks(weeks: Week[]): Week[] {
-  return [...weeks].sort((left, right) => {
-    const leftDate = toDateFromISO(left.start_date || '2000-01-01');
-    const rightDate = toDateFromISO(right.start_date || '2000-01-01');
-    return leftDate.getTime() - rightDate.getTime();
-  });
+  return [...weeks].sort((left, right) => left.start_date.localeCompare(right.start_date));
 }
 
 function markCurrentWeek(weeks: Week[]): Week[] {
   const today = getTodayInSaoPaulo();
-  const nextWeeks = weeks.map((week) => ({ ...week, is_current: false }));
+  const sorted = sortWeeks(weeks);
+  const currentIndex = sorted.findIndex(
+    (week) => week.start_date <= today && week.end_date >= today
+  );
+  const fallbackIndex = sorted.findIndex((week) => week.end_date >= today);
+  const selectedIndex = currentIndex >= 0 ? currentIndex : fallbackIndex >= 0 ? fallbackIndex : sorted.length - 1;
 
-  const current = nextWeeks.find((week) => {
-    const start = toDateFromISO(week.start_date);
-    const end = toDateFromISO(week.end_date);
-    const currentDate = toDateFromISO(today);
-    return currentDate >= start && currentDate <= end;
-  });
-
-  if (current) {
-    return nextWeeks.map((week) => ({
-      ...week,
-      is_current: week.id === current.id,
-    }));
-  }
-
-  if (nextWeeks.length > 0) {
-    return nextWeeks.map((week, index) => ({
-      ...week,
-      is_current: index === 0,
-    }));
-  }
-
-  return nextWeeks;
+  return sorted.map((week, index) => ({
+    ...week,
+    is_current: index === selectedIndex,
+  }));
 }
 
-function reconcileCycle(weeks: Week[], cycleMode: boolean): Week[] {
-  const safeWeeks = sortWeeks(weeks || []);
+export function reconcileCycle(weeks: Week[], cycleMode: boolean): Week[] {
+  const safeWeeks = sortWeeks(weeks);
+  if (safeWeeks.length === 0) return [];
+  if (!cycleMode) return markCurrentWeek(safeWeeks);
+
   const today = toDateFromISO(getTodayInSaoPaulo());
-  const activeWeeks: Week[] = [];
-  const expiredWeeks: Week[] = [];
+  const rotated = safeWeeks.map((week) => ({ ...week }));
+  let lastEndDate = today;
 
-  for (const week of safeWeeks) {
-    const end = toDateFromISO(week.end_date);
-    if (end < today) {
-      expiredWeeks.push(week);
-    } else {
-      activeWeeks.push(week);
+  for (const week of rotated) {
+    const originalStartDate = week.start_date;
+    const endDate = toDateFromISO(week.end_date);
+    if (endDate < today) {
+      const duration = getWeekDurationInDays(week);
+      const newStart = addDays(toISODate(lastEndDate), 1);
+      const newEnd = addDays(newStart, duration - 1);
+      week.start_date = newStart;
+      week.end_date = newEnd;
+      for (const meal of week.meals) {
+        const offset = Math.max(0, Math.round(
+          (toDateFromISO(meal.date).getTime() - toDateFromISO(originalStartDate).getTime()) /
+            (1000 * 60 * 60 * 24)
+        ));
+        meal.date = addDays(newStart, offset);
+      }
     }
+    lastEndDate = toDateFromISO(week.end_date);
   }
 
-  if (!cycleMode) {
-    return markCurrentWeek(activeWeeks);
-  }
-
-  let lastEndDate = activeWeeks.length > 0
-    ? toDateFromISO(activeWeeks[activeWeeks.length - 1].end_date)
-    : today;
-
-  for (const expiredWeek of expiredWeeks) {
-    const duration = getWeekDurationInDays(expiredWeek);
-    const newStart = addDays(toDateFromISO(lastEndDate.toISOString().slice(0, 10)).toISOString().slice(0, 10), 1);
-    const newEnd = addDays(newStart, duration - 1);
-    const rotated: Week = {
-      ...expiredWeek,
-      start_date: newStart,
-      end_date: newEnd,
-      is_current: false,
-    };
-    activeWeeks.push(rotated);
-    lastEndDate = toDateFromISO(newEnd);
-  }
-
-  return markCurrentWeek(activeWeeks);
+  return markCurrentWeek(rotated);
 }
 
-function normalizeState(record: any): { weeks: Week[]; cycle_mode: boolean; updated_at: string } {
-  const weeks = Array.isArray(record?.weeks) ? record.weeks as Week[] : initialWeeks;
-  const cycleMode = Boolean(record?.cycle_mode ?? DEFAULT_CYCLE_MODE);
+function toISODate(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+function normalizeState(record: MenuStateDocument): MenuState {
+  const parsed = menuStateSchema.parse(record);
+  const weeks = reconcileCycle(parsed.weeks, parsed.cycle_mode);
   return {
-    weeks: reconcileCycle(weeks, cycleMode),
+    weeks,
+    cycle_mode: parsed.cycle_mode,
+    updated_at: parsed.updated_at,
+  };
+}
+
+function buildState(weeks: Week[], cycleMode: boolean): MenuState {
+  const validatedWeeks = weeks.map((week) => weekSchema.parse(week));
+  return {
+    weeks: reconcileCycle(validatedWeeks, cycleMode),
     cycle_mode: cycleMode,
-    updated_at: String(record?.updated_at || new Date().toISOString()),
-  };
-}
-
-export async function getMenuState(): Promise<{ weeks: Week[]; cycle_mode: boolean; updated_at: string }> {
-  try {
-    const collection = await getMenuCollection();
-    const { data, error } = await collection.select('*').eq('id', 'default').maybeSingle();
-
-    if (!error && data) {
-      const next = normalizeState(data);
-      await collection.upsert({ id: 'default', ...next }, { onConflict: 'id' });
-      return next;
-    }
-  } catch {
-    // fallback to seeded data when Supabase is not configured or unavailable
-  }
-
-  const seeded = reconcileCycle(initialWeeks, DEFAULT_CYCLE_MODE);
-  return {
-    weeks: seeded,
-    cycle_mode: DEFAULT_CYCLE_MODE,
     updated_at: new Date().toISOString(),
   };
 }
 
-export async function saveMenuState(weeks: Week[], cycleMode: boolean): Promise<{ weeks: Week[]; cycle_mode: boolean; updated_at: string }> {
-  const normalized = reconcileCycle(weeks || [], Boolean(cycleMode));
-  const state = {
-    weeks: normalized,
-    cycle_mode: Boolean(cycleMode),
-    updated_at: new Date().toISOString(),
-  };
+export async function getMenuState(): Promise<MenuState> {
+  const collection = await getMenuCollection();
+  const record = await collection.findOne({ _id: 'default' });
 
-  try {
-    const collection = await getMenuCollection();
-    const { error } = await collection.upsert({ id: 'default', ...state }, { onConflict: 'id' });
-    if (!error) {
-      return state;
+  if (record) {
+    const state = normalizeState(record);
+    if (JSON.stringify(state.weeks) !== JSON.stringify(record.weeks)) {
+      await collection.updateOne({ _id: 'default' }, { $set: state });
     }
-  } catch {
-    // no-op fallback
+    return state;
   }
 
+  const state = buildState(initialWeeks, DEFAULT_CYCLE_MODE);
+  await collection.insertOne({ _id: 'default', ...state });
   return state;
 }
 
-export async function processCronExpiredWeeks(): Promise<{ weeks: Week[]; cycle_mode: boolean; updated_at: string }> {
+export async function saveMenuState(weeks: Week[], cycleMode: boolean): Promise<MenuState> {
+  const state = buildState(weeks, cycleMode);
+  const collection = await getMenuCollection();
+  await collection.updateOne(
+    { _id: 'default' },
+    { $set: state, $setOnInsert: { _id: 'default' } },
+    { upsert: true }
+  );
+  return state;
+}
+
+export async function processCronExpiredWeeks(): Promise<MenuState> {
   const state = await getMenuState();
-  const next = reconcileCycle(state.weeks, state.cycle_mode);
-  const updated = {
-    weeks: next,
-    cycle_mode: state.cycle_mode,
-    updated_at: new Date().toISOString(),
-  };
-
-  try {
-    const collection = await getMenuCollection();
-    await collection.upsert({ id: 'default', ...updated }, { onConflict: 'id' });
-  } catch {
-    // ignore if Supabase is unavailable in local development
-  }
-
+  const updated = buildState(state.weeks, state.cycle_mode);
+  const collection = await getMenuCollection();
+  await collection.updateOne(
+    { _id: 'default' },
+    { $set: updated, $setOnInsert: { _id: 'default' } },
+    { upsert: true }
+  );
   return updated;
 }
 
 export function buildMenuStateDocument(weeks: Week[], cycleMode: boolean): MenuStateDocument {
-  const state = reconcileCycle(weeks, cycleMode);
-  return {
-    _id: 'default',
-    weeks: state,
-    cycle_mode: Boolean(cycleMode),
-    updated_at: new Date().toISOString(),
-  };
+  const state = buildState(weeks, cycleMode);
+  return { _id: 'default', ...state };
 }
